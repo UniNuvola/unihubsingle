@@ -2,7 +2,7 @@ FROM quay.io/jupyter/base-notebook:2025-03-14
 
 USER root
 
-RUN apt-get -y -qq update \
+RUN apt-get -y -qq update && apt-get upgrade -y \
  && apt-get -y -qq install \
         dbus-x11 \
         # xclip is added as jupyter-remote-desktop-proxy's tests requires it
