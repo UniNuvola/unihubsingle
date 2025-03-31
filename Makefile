@@ -1,29 +1,38 @@
 include buildinfo.mk
 
+BRANCH=main
+
 .PHONY: all 
-all: check build push tag
+all: check build push quay
 
 .PHONY: check
 check:
 ifeq ($(IMAGE),)
 	$(error "Missing IMAGE") 
 endif
-ifeq ($(DEPLOYED),)
-	$(error "Missing DEPLOYED") 
-endif
 
 .PHONY: build
 build: check
-	docker build -t $(IMAGE):$(shell date +%Y-%m-%d) .
+	docker build --build-arg GIT_BRANCH=$(BRANCH) -t $(IMAGE):$(BRANCH) .
 
 .PHONY: push
 push: check
-	docker push $(IMAGE):$(shell date +%Y-%m-%d)
-	docker tag $(IMAGE):$(shell date +%Y-%m-%d) $(IMAGE):latest
-	docker push $(IMAGE):latest
+	docker push $(IMAGE):$(BRANCH)
 
-.PHONY: tag
-tag: check
-	docker pull $(IMAGE):$(DEPLOYED)
-	docker tag $(IMAGE):$(DEPLOYED) $(IMAGE):deployed
-	docker push $(IMAGE):deployed
+# TODO: remove remote images ??
+.PHONY: untag
+untag: check
+	docker image rm $(IMAGE):$(BRANCH)
+
+quay: check
+ifeq ($(QUAY),)
+	$(warning "Missing QUAY")
+	@echo "Skip pushing image on QUAY"
+	@exit 0
+else ifeq ($(QUAY), n)
+	@echo "Skip pushing image on QUAY"
+else
+	@echo "Pushing on QUAY"
+	docker tag $(IMAGE):$(BRANCH) $(QUAY):$(BRANCH)
+	docker push $(QUAY):$(BRANCH)
+endif
